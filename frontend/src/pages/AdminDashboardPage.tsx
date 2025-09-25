@@ -1,8 +1,13 @@
-﻿export default function AdminDashboardPage() {
+﻿import { APP_ENV } from '../config';
+
+export default function AdminDashboardPage() {
   return (
     <main className="page">
       <header className="page-header">
-        <h1>관리자 대시보드</h1>
+        <div>
+          <h1>관리자 대시보드</h1>
+          <p className="muted">현재 실행 환경: {APP_ENV}</p>
+        </div>
       </header>
       <section className="admin-grid">
         <article className="card">

@@ -66,3 +66,8 @@ pnpm dev  # 또는 npm run dev
 - `/backend/apps/*/`와 `/frontend/src/` 내 모듈별 주석과 TODO 확인
 
 필요한 개선이나 추가 요구사항은 SPEC 업데이트 후 반영해주세요.
+
+### Environment Configuration
+- Copy `backend/.env.dev.example` or `backend/.env.prod.example` to environment-specific files (e.g. `.env.dev`, `.env.prod`) and point `ENVIRONMENT` accordingly.
+- Frontend uses Vite environment files: duplicate `.env.development.example` and `.env.production.example` as needed (`.env.development.local`, `.env.production.local`).
+- Keep development variables on the `dev` branch and production variables aligned with the `main` branch release.

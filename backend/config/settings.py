@@ -1,24 +1,40 @@
-﻿from pathlib import Path
+﻿from __future__ import annotations
+
 from datetime import timedelta
+from pathlib import Path
 
 import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env(
+    ENVIRONMENT=(str, 'dev'),
     DEBUG=(bool, False),
     SECRET_KEY=(str, 'django-insecure-change-me'),
     ALLOWED_HOSTS=(list[str], ['localhost', '127.0.0.1']),
     CORS_ALLOWED_ORIGINS=(list[str], ['http://localhost:5173']),
 )
 
-env_file = BASE_DIR / '.env'
-if env_file.exists():
-    environ.Env.read_env(env_file)
+# Load base .env first
+base_env_file = BASE_DIR / '.env'
+if base_env_file.exists():
+    environ.Env.read_env(base_env_file)
 
-DEBUG = env('DEBUG')
+# Determine current runtime environment (dev, prod, etc.)
+ENVIRONMENT = env('ENVIRONMENT', default='dev').lower()
+
+# Load environment-specific overrides if available (e.g. .env.dev, .env.prod)
+specific_env_file = BASE_DIR / f'.env.{ENVIRONMENT}'
+if specific_env_file.exists():
+    environ.Env.read_env(specific_env_file)
+
+DEBUG = env.bool('DEBUG', default=ENVIRONMENT != 'prod')
 SECRET_KEY = env('SECRET_KEY')
-ALLOWED_HOSTS = env('ALLOWED_HOSTS')
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
+CORS_ALLOWED_ORIGINS = env.list(
+    'CORS_ALLOWED_ORIGINS',
+    default=['http://localhost:5173'] if ENVIRONMENT == 'dev' else [],
+)
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -142,10 +158,21 @@ ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_EMAIL_VERIFICATION = 'optional'
 
-CORS_ALLOWED_ORIGINS = env('CORS_ALLOWED_ORIGINS')
-
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [origin.rstrip('/') for origin in CORS_ALLOWED_ORIGINS]
 
 FILE_UPLOAD_PERMISSIONS = 0o644
 FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
+
+if ENVIRONMENT == 'prod':
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=True)
+    SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=True)
+    CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=True)
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+else:
+    SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=False)
+    SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=False)
+    CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=False)

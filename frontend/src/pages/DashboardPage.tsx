@@ -1,5 +1,7 @@
 ﻿import { useState } from 'react';
 
+import { APP_ENV } from '../config';
+
 type ViewMode = 'card' | 'list';
 
 const mockPosts = [
@@ -13,7 +15,10 @@ export default function DashboardPage() {
   return (
     <main className="page">
       <header className="page-header">
-        <h1>게시판</h1>
+        <div>
+          <h1>게시판</h1>
+          <p className="muted">현재 실행 환경: {APP_ENV}</p>
+        </div>
         <div className="view-toggle">
           <button
             type="button"
