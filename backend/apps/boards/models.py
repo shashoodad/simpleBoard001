@@ -68,3 +68,18 @@ class YoutubeEmbed(models.Model):
 
     class Meta:
         unique_together = ('post', 'video_id')
+
+
+class BoardAccess(models.Model):
+    board = models.ForeignKey(Board, on_delete=models.CASCADE, related_name="access_rules")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="board_accesses")
+    can_view = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ("board", "user")
+        verbose_name = "Board Access"
+        verbose_name_plural = "Board Accesses"
+
+    def __str__(self) -> str:
+        return f"{self.user} -> {self.board}"
+

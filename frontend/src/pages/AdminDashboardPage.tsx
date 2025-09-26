@@ -2,7 +2,7 @@
 
 export default function AdminDashboardPage() {
   return (
-    <main className="page">
+    <div className="page">
       <header className="page-header">
         <div>
           <h1>관리자 대시보드</h1>
@@ -23,6 +23,7 @@ export default function AdminDashboardPage() {
           <p>메뉴-역할 매핑을 편집하는 UI/API와 연동.</p>
         </article>
       </section>
-    </main>
+    </div>
   );
 }
+

@@ -5,6 +5,7 @@ import path from 'node:path';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const proxyTarget = env.VITE_DEV_API_PROXY || 'http://localhost:8000';
+  const appEnv = env.VITE_APP_ENV || mode;
 
   return {
     plugins: [react()],
@@ -23,7 +24,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     define: {
-      __APP_ENV__: env.VITE_APP_ENV || mode,
+      __APP_ENV__: JSON.stringify(appEnv),
     },
   };
 });

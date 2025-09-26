@@ -57,7 +57,7 @@ class PostSerializer(serializers.ModelSerializer):
             'attachments',
             'youtube_embeds',
         ]
-        read_only_fields = ['id', 'author', 'author_name', 'created_at', 'updated_at', 'attachments', 'youtube_embeds']
+        read_only_fields = ['id', 'board', 'author', 'author_name', 'created_at', 'updated_at', 'attachments', 'youtube_embeds']
 
 
 class PostWriteSerializer(PostSerializer):
@@ -119,3 +119,16 @@ class PostWriteSerializer(PostSerializer):
                 if video_id:
                     YoutubeEmbed.objects.get_or_create(post=instance, video_id=video_id)
         return instance
+
+
+class BoardSummarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Board
+        fields = ['id', 'name', 'description', 'visibility']
+
+
+class BoardAccessUpdateSerializer(serializers.Serializer):
+    userId = serializers.IntegerField()
+    boardIds = serializers.ListField(child=serializers.IntegerField(), allow_empty=True)
+
+

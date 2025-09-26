@@ -1,6 +1,6 @@
-﻿from django.contrib import admin
+from django.contrib import admin
 
-from .models import Attachment, Board, Post, YoutubeEmbed
+from .models import Attachment, Board, BoardAccess, Post, YoutubeEmbed
 
 
 @admin.register(Board)
@@ -38,3 +38,11 @@ class AttachmentAdmin(admin.ModelAdmin):
 class YoutubeEmbedAdmin(admin.ModelAdmin):
     list_display = ('video_id', 'post')
     search_fields = ('video_id',)
+
+
+@admin.register(BoardAccess)
+class BoardAccessAdmin(admin.ModelAdmin):
+    list_display = ("board", "user", "can_view")
+    list_filter = ("can_view", "board")
+    search_fields = ("board__name", "user__email")
+

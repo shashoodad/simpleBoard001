@@ -1,15 +1,33 @@
 ﻿import { Navigate, Route, Routes } from 'react-router-dom';
 
+import AppShell from './components/AppShell';
 import AdminDashboardPage from './pages/AdminDashboardPage';
+import BoardAccessPage from './pages/BoardAccessPage';
 import DashboardPage from './pages/DashboardPage';
 import LoginPage from './pages/LoginPage';
+import PostEditorPage from './pages/PostEditorPage';
 import RegistrationPage from './pages/RegistrationPage';
 
 const RequireAuth = ({ children }: { children: JSX.Element }) => {
-  const isAuthenticated = false; // TODO: replace with auth state from context/provider
+  const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
 
-  if (!isAuthenticated) {
-    return <Navigate to=\"/login\" replace />;
+  if (!accessToken) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+};
+
+const RequireAdmin = ({ children }: { children: JSX.Element }) => {
+  const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+  const role = typeof window !== 'undefined' ? localStorage.getItem('userRole') : null;
+
+  if (!accessToken) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (role !== 'admin') {
+    return <Navigate to="/" replace />;
   }
 
   return children;
@@ -18,25 +36,49 @@ const RequireAuth = ({ children }: { children: JSX.Element }) => {
 export default function App() {
   return (
     <Routes>
-      <Route path=\"/login\" element={<LoginPage />} />
-      <Route path=\"/register\" element={<RegistrationPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegistrationPage />} />
       <Route
-        path=\"/admin\"
+        path="/"
         element={
           <RequireAuth>
-            <AdminDashboardPage />
+            <AppShell>
+              <DashboardPage />
+            </AppShell>
           </RequireAuth>
         }
       />
       <Route
-        path=\"/\"
+        path="/posts/new"
         element={
           <RequireAuth>
-            <DashboardPage />
+            <AppShell>
+              <PostEditorPage />
+            </AppShell>
           </RequireAuth>
         }
       />
-      <Route path=\"*\" element={<Navigate to=\"/\" replace />} />
+      <Route
+        path="/admin"
+        element={
+          <RequireAdmin>
+            <AppShell>
+              <AdminDashboardPage />
+            </AppShell>
+          </RequireAdmin>
+        }
+      />
+      <Route
+        path="/admin/board-access"
+        element={
+          <RequireAdmin>
+            <AppShell>
+              <BoardAccessPage />
+            </AppShell>
+          </RequireAdmin>
+        }
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

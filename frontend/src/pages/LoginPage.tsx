@@ -1,8 +1,10 @@
 ﻿import { FormEvent, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { API_BASE_URL } from '../config';
 
 export default function LoginPage() {
+  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -24,12 +26,40 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
+      const result = await response.json().catch(() => ({ detail: '응답 파싱에 실패했습니다.' }));
+
       if (!response.ok) {
-        throw new Error('로그인에 실패했습니다. 환경 변수를 확인하세요.');
+        throw new Error(result.detail || '로그인에 실패했습니다. 입력 정보를 다시 확인하세요.');
       }
 
-      // TODO: 토큰 저장 및 사용자 정보 갱신 처리
-      console.info('로그인 성공', await response.json());
+      const accessToken = result.accessToken ?? result.access ?? '';
+      const refreshToken = result.refreshToken ?? result.refresh ?? '';
+
+      if (accessToken) {
+        localStorage.setItem('accessToken', accessToken);
+      }
+      if (refreshToken) {
+        localStorage.setItem('refreshToken', refreshToken);
+      }
+
+      if (accessToken) {
+        try {
+          const meResponse = await fetch(`${API_BASE_URL}/auth/me/`, {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          });
+          if (meResponse.ok) {
+            const me = await meResponse.json();
+            localStorage.setItem('userRole', me.role ?? 'basic');
+            localStorage.setItem('userEmail', me.email ?? email);
+          }
+        } catch (fetchError) {
+          console.error('현재 사용자 정보를 가져오지 못했습니다.', fetchError);
+        }
+      }
+
+      navigate('/', { replace: true });
     } catch (error) {
       console.error(error);
       setErrorMessage(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.');
