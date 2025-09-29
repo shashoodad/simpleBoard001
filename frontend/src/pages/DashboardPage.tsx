@@ -68,11 +68,7 @@ export default function DashboardPage() {
       setIsLoadingPosts(true);
       setError(null);
       try {
-        const query = new URLSearchParams();
-        if (viewMode) {
-          query.set('view', viewMode);
-        }
-        const response = await authFetch(`${API_BASE_URL}/boards/${selectedBoardId}/posts/?${query.toString()}`);
+        const response = await authFetch(`${API_BASE_URL}/boards/${selectedBoardId}/posts/`);
         if (!response.ok) {
           const problem = await response.json().catch(() => ({ detail: '게시글을 불러오지 못했습니다.' }));
           throw new Error(problem.detail || '게시글을 불러오지 못했습니다.');
@@ -93,7 +89,7 @@ export default function DashboardPage() {
     };
 
     fetchPosts();
-  }, [selectedBoardId, viewMode, navigate]);
+  }, [selectedBoardId, navigate]);
 
   const handleViewChange = (mode: ViewMode) => {
     setViewMode(mode);

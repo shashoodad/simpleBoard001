@@ -5,14 +5,13 @@ import { API_BASE_URL } from '../config';
 import { authFetch, SessionExpiredError } from '../lib/authFetch';
 import { AuthStorage } from '../lib/auth';
 
-import type { BoardSummary, ViewMode } from '../types/board';
+import type { BoardSummary } from '../types/board';
 
 export default function PostEditorPage() {
   const navigate = useNavigate();
   const [boards, setBoards] = useState<BoardSummary[]>([]);
   const [boardsError, setBoardsError] = useState<string | null>(null);
   const [selectedBoardId, setSelectedBoardId] = useState<string>('');
-  const [viewType, setViewType] = useState<ViewMode>('card');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -73,7 +72,6 @@ export default function PostEditorPage() {
     const payload = {
       title: formData.get('title')?.toString()?.trim() ?? '',
       content: formData.get('content')?.toString()?.trim() ?? '',
-      view_type: viewType,
     };
 
     if (!payload.title || !payload.content) {
@@ -100,7 +98,6 @@ export default function PostEditorPage() {
       setMessage('글이 성공적으로 등록되었습니다.');
       form.reset();
       setSelectedBoardId(String(boardId));
-      setViewType('card');
     } catch (err) {
       if (err instanceof SessionExpiredError) {
         AuthStorage.setLogoutMessage('로그아웃 되었습니다.');
@@ -147,12 +144,6 @@ export default function PostEditorPage() {
 
         <label htmlFor="content">내용</label>
         <textarea id="content" name="content" rows={10} required placeholder="본문을 입력하세요" />
-
-        <label htmlFor="viewType">기본 노출</label>
-        <select id="viewType" name="viewType" value={viewType} onChange={(event) => setViewType(event.target.value as ViewMode)}>
-          <option value="card">카드형</option>
-          <option value="list">리스트형</option>
-        </select>
 
         <button type="submit" disabled={isSubmitting || !canSubmit}>
           {isSubmitting ? '등록 중...' : '등록하기'}

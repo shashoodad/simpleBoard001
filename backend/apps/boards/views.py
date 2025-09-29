@@ -143,3 +143,4 @@ class BoardAccessManagementView(APIView):
         return Response({"userId": user.id, "boardIds": valid_board_ids})
 
 
+
