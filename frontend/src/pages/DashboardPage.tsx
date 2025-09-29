@@ -2,6 +2,8 @@
 import { useNavigate } from 'react-router-dom';
 
 import { API_BASE_URL, APP_ENV } from '../config';
+import { authFetch, SessionExpiredError } from '../lib/authFetch';
+import { AuthStorage } from '../lib/auth';
 
 import type { BoardSummary, PostSummary, ViewMode } from '../types/board';
 
@@ -19,37 +21,21 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
 
-  const isAdmin = userRole === 'admin';
-
   useEffect(() => {
     if (typeof window === 'undefined') return;
     setUserRole(localStorage.getItem('userRole'));
   }, []);
 
+  const isAdmin = userRole === 'admin';
+
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      setError('로그인 정보가 없습니다. 다시 로그인해주세요.');
-      setIsLoadingBoards(false);
-      return;
-    }
-
-    const controller = new AbortController();
-
-    (async () => {
+    const fetchBoards = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/boards`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          signal: controller.signal,
-        });
-
+        const response = await authFetch(`${API_BASE_URL}/boards`);
         if (!response.ok) {
           const problem = await response.json().catch(() => ({ detail: '게시판 목록을 불러오지 못했습니다.' }));
           throw new Error(problem.detail || '게시판 목록을 불러오지 못했습니다.');
         }
-
         const data: BoardSummary[] = await response.json();
         setBoards(data);
         if (data.length > 0) {
@@ -57,16 +43,20 @@ export default function DashboardPage() {
         }
         setError(null);
       } catch (err) {
-        if ((err as DOMException)?.name === 'AbortError') return;
+        if (err instanceof SessionExpiredError) {
+          AuthStorage.setLogoutMessage('로그아웃 되었습니다.');
+          navigate('/login', { replace: true });
+          return;
+        }
         console.error(err);
         setError(err instanceof Error ? err.message : '게시판 목록을 불러오지 못했습니다.');
       } finally {
         setIsLoadingBoards(false);
       }
-    })();
+    };
 
-    return () => controller.abort();
-  }, []);
+    fetchBoards();
+  }, [navigate]);
 
   useEffect(() => {
     if (!selectedBoardId) {
@@ -74,47 +64,36 @@ export default function DashboardPage() {
       return;
     }
 
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      setError('로그인 정보가 없습니다. 다시 로그인해주세요.');
-      return;
-    }
-
-    const controller = new AbortController();
-    setIsLoadingPosts(true);
-    setError(null);
-
-    (async () => {
+    const fetchPosts = async () => {
+      setIsLoadingPosts(true);
+      setError(null);
       try {
         const query = new URLSearchParams();
         if (viewMode) {
           query.set('view', viewMode);
         }
-        const response = await fetch(`${API_BASE_URL}/boards/${selectedBoardId}/posts/?${query.toString()}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          signal: controller.signal,
-        });
-
+        const response = await authFetch(`${API_BASE_URL}/boards/${selectedBoardId}/posts/?${query.toString()}`);
         if (!response.ok) {
           const problem = await response.json().catch(() => ({ detail: '게시글을 불러오지 못했습니다.' }));
           throw new Error(problem.detail || '게시글을 불러오지 못했습니다.');
         }
-
         const data: PostSummary[] = await response.json();
         setPosts(data);
       } catch (err) {
-        if ((err as DOMException)?.name === 'AbortError') return;
+        if (err instanceof SessionExpiredError) {
+          AuthStorage.setLogoutMessage('로그아웃 되었습니다.');
+          navigate('/login', { replace: true });
+          return;
+        }
         console.error(err);
         setError(err instanceof Error ? err.message : '게시글을 불러오지 못했습니다.');
       } finally {
         setIsLoadingPosts(false);
       }
-    })();
+    };
 
-    return () => controller.abort();
-  }, [selectedBoardId, viewMode]);
+    fetchPosts();
+  }, [selectedBoardId, viewMode, navigate]);
 
   const handleViewChange = (mode: ViewMode) => {
     setViewMode(mode);

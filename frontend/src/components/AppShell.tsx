@@ -1,5 +1,7 @@
 ﻿import { NavLink } from 'react-router-dom';
 
+import { useSessionWatcher } from '../hooks/useSessionWatcher';
+
 interface NavItem {
   to: string;
   label: string;
@@ -42,6 +44,8 @@ function HeaderNav() {
 }
 
 export default function AppShell({ children }: AppShellProps) {
+  useSessionWatcher();
+
   return (
     <div className="app-shell">
       <HeaderNav />

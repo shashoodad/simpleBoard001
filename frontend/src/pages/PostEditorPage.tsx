@@ -1,9 +1,14 @@
 ﻿import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { API_BASE_URL } from '../config';
+import { authFetch, SessionExpiredError } from '../lib/authFetch';
+import { AuthStorage } from '../lib/auth';
+
 import type { BoardSummary, ViewMode } from '../types/board';
 
 export default function PostEditorPage() {
+  const navigate = useNavigate();
   const [boards, setBoards] = useState<BoardSummary[]>([]);
   const [boardsError, setBoardsError] = useState<string | null>(null);
   const [selectedBoardId, setSelectedBoardId] = useState<string>('');
@@ -14,24 +19,9 @@ export default function PostEditorPage() {
   const [isLoadingBoards, setIsLoadingBoards] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      setBoardsError('로그인 정보가 없습니다. 다시 로그인해주세요.');
-      setIsLoadingBoards(false);
-      return;
-    }
-
-    const controller = new AbortController();
-
-    (async () => {
+    const fetchBoards = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/boards`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          signal: controller.signal,
-        });
-
+        const response = await authFetch(`${API_BASE_URL}/boards`);
         if (!response.ok) {
           const problem = await response.json().catch(() => ({ detail: '게시판 목록을 불러오지 못했습니다.' }));
           throw new Error(problem.detail || '게시판 목록을 불러오지 못했습니다.');
@@ -44,7 +34,9 @@ export default function PostEditorPage() {
         }
         setBoardsError(null);
       } catch (err) {
-        if ((err as DOMException)?.name === 'AbortError') {
+        if (err instanceof SessionExpiredError) {
+          AuthStorage.setLogoutMessage('로그아웃 되었습니다.');
+          navigate('/login', { replace: true });
           return;
         }
         console.error(err);
@@ -52,10 +44,10 @@ export default function PostEditorPage() {
       } finally {
         setIsLoadingBoards(false);
       }
-    })();
+    };
 
-    return () => controller.abort();
-  }, []);
+    fetchBoards();
+  }, [navigate]);
 
   const canSubmit = useMemo(() => !isLoadingBoards && selectedBoardId !== '', [isLoadingBoards, selectedBoardId]);
 
@@ -92,15 +84,9 @@ export default function PostEditorPage() {
     setIsSubmitting(true);
 
     try {
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
-        throw new Error('로그인 정보가 없습니다. 다시 로그인해주세요.');
-      }
-
-      const response = await fetch(`${API_BASE_URL}/boards/${boardId}/posts/`, {
+      const response = await authFetch(`${API_BASE_URL}/boards/${boardId}/posts/`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
@@ -115,9 +101,14 @@ export default function PostEditorPage() {
       form.reset();
       setSelectedBoardId(String(boardId));
       setViewType('card');
-    } catch (error) {
-      console.error(error);
-      setSubmitError(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.');
+    } catch (err) {
+      if (err instanceof SessionExpiredError) {
+        AuthStorage.setLogoutMessage('로그아웃 되었습니다.');
+        navigate('/login', { replace: true });
+        return;
+      }
+      console.error(err);
+      setSubmitError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
     } finally {
       setIsSubmitting(false);
     }

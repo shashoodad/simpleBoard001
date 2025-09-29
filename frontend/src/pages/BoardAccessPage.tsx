@@ -1,6 +1,9 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 
 import { API_BASE_URL } from '../config';
+import { authFetch, SessionExpiredError } from '../lib/authFetch';
+import { AuthStorage } from '../lib/auth';
+
 import type { BoardSummary } from '../types/board';
 import type { UserSummary } from '../types/user';
 
@@ -24,41 +27,26 @@ export default function BoardAccessPage() {
   const canManage = useMemo(() => Boolean(selectedUserId) && !isSaving, [selectedUserId, isSaving]);
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      setError('로그인 정보가 없습니다. 다시 로그인해주세요.');
-      setIsLoading(false);
-      return;
-    }
-
-    const controller = new AbortController();
-
-    (async () => {
+    const fetchAccess = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/admin/board-access/`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          signal: controller.signal,
-        });
-
+        const response = await authFetch(`${API_BASE_URL}/admin/board-access/`);
         if (!response.ok) {
           const problem = await response.json().catch(() => ({ detail: '권한 정보를 불러오지 못했습니다.' }));
           throw new Error(problem.detail || '권한 정보를 불러오지 못했습니다.');
         }
-
         const data: AccessResponse = await response.json();
         setBoards(data.boards);
         setUsers(data.users);
         setAccessMap(data.access ?? {});
-
         const firstUserId = data.users[0]?.id ? String(data.users[0].id) : '';
         if (firstUserId) {
           setSelectedUserId(firstUserId);
           setSelectedBoardIds(new Set(data.access?.[firstUserId] ?? []));
         }
       } catch (err) {
-        if ((err as DOMException)?.name === 'AbortError') {
+        if (err instanceof SessionExpiredError) {
+          AuthStorage.setLogoutMessage('로그아웃 되었습니다.');
+          window.location.href = '/login';
           return;
         }
         console.error(err);
@@ -66,9 +54,9 @@ export default function BoardAccessPage() {
       } finally {
         setIsLoading(false);
       }
-    })();
+    };
 
-    return () => controller.abort();
+    fetchAccess();
   }, []);
 
   useEffect(() => {
@@ -100,18 +88,10 @@ export default function BoardAccessPage() {
     setError(null);
     setFeedback(null);
 
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      setError('로그인 정보가 없습니다. 다시 로그인해주세요.');
-      setIsSaving(false);
-      return;
-    }
-
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/board-access/`, {
+      const response = await authFetch(`${API_BASE_URL}/admin/board-access/`, {
         method: 'PUT',
         headers: {
-          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -128,6 +108,11 @@ export default function BoardAccessPage() {
       setFeedback('권한이 성공적으로 업데이트되었습니다.');
       setAccessMap((prev) => ({ ...prev, [selectedUserId]: Array.from(selectedBoardIds) }));
     } catch (err) {
+      if (err instanceof SessionExpiredError) {
+        AuthStorage.setLogoutMessage('로그아웃 되었습니다.');
+        window.location.href = '/login';
+        return;
+      }
       console.error(err);
       setError(err instanceof Error ? err.message : '권한을 저장하지 못했습니다.');
     } finally {
@@ -209,4 +194,3 @@ export default function BoardAccessPage() {
     </div>
   );
 }
-
