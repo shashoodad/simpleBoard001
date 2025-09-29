@@ -6,6 +6,7 @@ import BoardAccessPage from './pages/BoardAccessPage';
 import DashboardPage from './pages/DashboardPage';
 import LoginPage from './pages/LoginPage';
 import PostEditorPage from './pages/PostEditorPage';
+import PostDetailPage from './pages/PostDetailPage';
 import RegistrationPage from './pages/RegistrationPage';
 
 const RequireAuth = ({ children }: { children: JSX.Element }) => {
@@ -82,3 +83,5 @@ export default function App() {
     </Routes>
   );
 }
+
+

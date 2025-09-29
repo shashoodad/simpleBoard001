@@ -104,6 +104,10 @@ export default function DashboardPage() {
 
   const displayedPosts = useMemo(() => posts, [posts]);
 
+  const handleOpenPost = (postId: number) => {
+    navigate(`/posts/${postId}`);
+  };
+
   return (
     <div className="page">
       <header className="page-header">
@@ -162,9 +166,9 @@ export default function DashboardPage() {
       ) : viewMode === 'card' ? (
         <section className="card-grid">
           {displayedPosts.map((post) => (
-            <article key={post.id} className="card">
+            <article key={post.id} className="card card-clickable" onClick={() => handleOpenPost(post.id)}>
               <h2>{post.title}</h2>
-              <p className="muted small">{post.author_name ?? '익명'} · {new Date(post.created_at).toLocaleString()}</p>
+              <p className="muted small">{post.author_name ?? post.author_email ?? 'admin@shashoo.com'} · {new Date(post.created_at).toLocaleString()}</p>
               <p>{post.content.slice(0, 120)}{post.content.length > 120 ? '…' : ''}</p>
             </article>
           ))}
@@ -180,9 +184,9 @@ export default function DashboardPage() {
           </thead>
           <tbody>
             {displayedPosts.map((post) => (
-              <tr key={post.id}>
+              <tr key={post.id} className="clickable-row" onClick={() => handleOpenPost(post.id)}>
                 <td>{post.title}</td>
-                <td>{post.author_name ?? '익명'}</td>
+                <td>{post.author_name ?? post.author_email ?? 'admin@shashoo.com'}</td>
                 <td>{new Date(post.created_at).toLocaleString()}</td>
               </tr>
             ))}

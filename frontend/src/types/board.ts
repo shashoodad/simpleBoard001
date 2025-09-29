@@ -13,5 +13,10 @@ export interface PostSummary {
   content: string;
   view_type: ViewMode;
   author_name?: string | null;
+  author_email?: string | null;
   created_at: string;
+  updated_at?: string;
 }
+
+
+

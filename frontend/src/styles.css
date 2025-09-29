@@ -306,3 +306,31 @@ main.auth-page {
 .small {
   font-size: 0.85rem;
 }
+
+.card-clickable {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 36px -24px rgba(15, 23, 42, 0.45);
+}
+
+.clickable-row {
+  cursor: pointer;
+}
+
+.clickable-row:hover {
+  background: rgba(226, 232, 240, 0.35);
+}
+
+.post-detail pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  border: 1px solid #e5e7eb;
+  line-height: 1.7;
+}
