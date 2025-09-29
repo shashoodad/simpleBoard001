@@ -40,7 +40,8 @@ class BoardSerializer(serializers.ModelSerializer):
 class PostSerializer(serializers.ModelSerializer):
     attachments = AttachmentSerializer(many=True, read_only=True)
     youtube_embeds = YoutubeEmbedSerializer(many=True, read_only=True)
-    author_name = serializers.CharField(source='author.first_name', read_only=True)
+    author_name = serializers.SerializerMethodField()
+    author_email = serializers.SerializerMethodField()
 
     class Meta:
         model = Post
@@ -49,6 +50,7 @@ class PostSerializer(serializers.ModelSerializer):
             'board',
             'author',
             'author_name',
+            'author_email',
             'title',
             'content',
             'view_type',
@@ -58,6 +60,18 @@ class PostSerializer(serializers.ModelSerializer):
             'youtube_embeds',
         ]
         read_only_fields = ['id', 'board', 'author', 'author_name', 'author_email', 'created_at', 'updated_at', 'attachments', 'youtube_embeds']
+
+    def get_author_name(self, obj: Post):
+        if obj.author and obj.author.first_name:
+            return obj.author.first_name
+        if obj.author and obj.author.email:
+            return obj.author.email
+        return 'admin@shashoo.com'
+
+    def get_author_email(self, obj: Post):
+        if obj.author and obj.author.email:
+            return obj.author.email
+        return 'admin@shashoo.com'
 
 
 class PostWriteSerializer(PostSerializer):
@@ -95,7 +109,7 @@ class PostWriteSerializer(PostSerializer):
                 YoutubeEmbed.objects.get_or_create(post=post, video_id=video_id)
         return post
 
-    def get_author_name(self, obj: Post):\n        if obj.author and obj.author.first_name:\n            return obj.author.first_name\n        if obj.author and obj.author.email:\n            return obj.author.email\n        return 'admin@shashoo.com'\n\n    def get_author_email(self, obj: Post):\n        if obj.author and obj.author.email:\n            return obj.author.email\n        return 'admin@shashoo.com'\n\n    def update(self, instance: Post, validated_data: dict):
+    def update(self, instance: Post, validated_data: dict):
         attachments_data: Iterable = validated_data.pop('attachments', [])
         youtube_links: Iterable[str] = validated_data.pop('youtube_links', [])
 
@@ -119,6 +133,7 @@ class PostWriteSerializer(PostSerializer):
                 if video_id:
                     YoutubeEmbed.objects.get_or_create(post=instance, video_id=video_id)
         return instance
+
 
 
 class BoardSummarySerializer(serializers.ModelSerializer):
