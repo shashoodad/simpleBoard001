@@ -10,7 +10,10 @@ import type { BoardSummary, PostSummary, ViewMode } from '../types/board';
 export default function DashboardPage() {
   const navigate = useNavigate();
   const [boards, setBoards] = useState<BoardSummary[]>([]);
-  const [selectedBoardId, setSelectedBoardId] = useState<string>('');
+  const [selectedBoardId, setSelectedBoardId] = useState<string>(() => {
+    if (typeof window === 'undefined') return '';
+    return localStorage.getItem('selectedBoardId') ?? '';
+  });
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (typeof window === 'undefined') return 'card';
     return (localStorage.getItem('boardViewMode') as ViewMode) || 'card';
@@ -39,7 +42,13 @@ export default function DashboardPage() {
         const data: BoardSummary[] = await response.json();
         setBoards(data);
         if (data.length > 0) {
-          setSelectedBoardId(String(data[0].id));
+          const storedId = typeof window !== 'undefined' ? localStorage.getItem('selectedBoardId') : null;
+          const fallbackId = String(data[0].id);
+          const initialId = storedId && data.some((board) => String(board.id) === storedId) ? storedId : fallbackId;
+          setSelectedBoardId(initialId);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('selectedBoardId', initialId);
+          }
         }
         setError(null);
       } catch (err) {
@@ -99,10 +108,23 @@ export default function DashboardPage() {
   };
 
   const handleBoardChange = (event: FormEvent<HTMLSelectElement>) => {
-    setSelectedBoardId(event.currentTarget.value);
+    const value = event.currentTarget.value;
+    setSelectedBoardId(value);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('selectedBoardId', value);
+    }
   };
 
   const displayedPosts = useMemo(() => posts, [posts]);
+
+  const summarise = (raw: string, limit = 140) => {
+    const normalized = raw.replace(/!\[[^\]]*\]\([^\)]*\)/g, ' [이미지] ').replace(/\s+/g, ' ').trim();
+    if (!normalized) return '';
+    return normalized.length > limit ? `${normalized.slice(0, limit)}...` : normalized;
+  };
+
+  const formatDateTime = (isoString: string) => new Date(isoString).toLocaleString();
+
 
   const handleOpenPost = (postId: number) => {
     navigate(`/posts/${postId}`);
@@ -130,21 +152,17 @@ export default function DashboardPage() {
               </option>
             ))}
           </select>
-          <div className="view-toggle">
-            <button
-              type="button"
-              className={viewMode === 'card' ? 'active' : ''}
-              onClick={() => handleViewChange('card')}
+          <div className="view-controls">
+            <label htmlFor="viewMode" className="sr-only">보기 방식</label>
+            <select
+              id="viewMode"
+              className="board-select compact"
+              value={viewMode}
+              onChange={(event) => handleViewChange(event.currentTarget.value as ViewMode)}
             >
-              카드형
-            </button>
-            <button
-              type="button"
-              className={viewMode === 'list' ? 'active' : ''}
-              onClick={() => handleViewChange('list')}
-            >
-              리스트형
-            </button>
+              <option value="card">카드형</option>
+              <option value="list">리스트형</option>
+            </select>
             <button type="button" className="primary" onClick={() => navigate('/posts/new')}>
               글쓰기
             </button>
@@ -168,8 +186,11 @@ export default function DashboardPage() {
           {displayedPosts.map((post) => (
             <article key={post.id} className="card card-clickable" onClick={() => handleOpenPost(post.id)}>
               <h2>{post.title}</h2>
-              <p className="muted small">{post.author_name ?? post.author_email ?? 'admin@shashoo.com'} · {new Date(post.created_at).toLocaleString()}</p>
-              <p>{post.content.slice(0, 120)}{post.content.length > 120 ? '…' : ''}</p>
+              <p className="card-summary">{summarise(post.content) || '내용이 아직 등록되지 않았습니다.'}</p>
+              <div className="card-meta">
+                <span className="card-author">{post.author_name ?? post.author_email ?? 'admin@shashoo.com'}</span>
+                <span className="card-date">{formatDateTime(post.created_at)}</span>
+              </div>
             </article>
           ))}
         </section>
@@ -187,7 +208,7 @@ export default function DashboardPage() {
               <tr key={post.id} className="clickable-row" onClick={() => handleOpenPost(post.id)}>
                 <td>{post.title}</td>
                 <td>{post.author_name ?? post.author_email ?? 'admin@shashoo.com'}</td>
-                <td>{new Date(post.created_at).toLocaleString()}</td>
+                <td>{formatDateTime(post.created_at)}</td>
               </tr>
             ))}
           </tbody>
@@ -196,3 +217,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

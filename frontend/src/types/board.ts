@@ -9,6 +9,8 @@ export interface BoardSummary {
 
 export interface PostSummary {
   id: number;
+  board: number;
+  board_name?: string | null;
   title: string;
   content: string;
   view_type: ViewMode;
@@ -17,6 +19,4 @@ export interface PostSummary {
   created_at: string;
   updated_at?: string;
 }
-
-
 

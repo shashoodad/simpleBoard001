@@ -42,12 +42,14 @@ class PostSerializer(serializers.ModelSerializer):
     youtube_embeds = YoutubeEmbedSerializer(many=True, read_only=True)
     author_name = serializers.SerializerMethodField()
     author_email = serializers.SerializerMethodField()
+    board_name = serializers.CharField(source='board.name', read_only=True)
 
     class Meta:
         model = Post
         fields = [
             'id',
             'board',
+            'board_name',
             'author',
             'author_name',
             'author_email',
@@ -59,7 +61,7 @@ class PostSerializer(serializers.ModelSerializer):
             'attachments',
             'youtube_embeds',
         ]
-        read_only_fields = ['id', 'board', 'author', 'author_name', 'author_email', 'created_at', 'updated_at', 'attachments', 'youtube_embeds']
+        read_only_fields = ['id', 'board', 'board_name', 'author', 'author_name', 'author_email', 'created_at', 'updated_at', 'attachments', 'youtube_embeds']
 
     def get_author_name(self, obj: Post):
         if obj.author and obj.author.first_name:
@@ -145,6 +147,7 @@ class BoardSummarySerializer(serializers.ModelSerializer):
 class BoardAccessUpdateSerializer(serializers.Serializer):
     userId = serializers.IntegerField()
     boardIds = serializers.ListField(child=serializers.IntegerField(), allow_empty=True)
+
 
 
 

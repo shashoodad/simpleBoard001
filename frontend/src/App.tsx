@@ -60,6 +60,16 @@ export default function App() {
         }
       />
       <Route
+        path="/posts/:postId"
+        element={
+          <RequireAuth>
+            <AppShell>
+              <PostDetailPage />
+            </AppShell>
+          </RequireAuth>
+        }
+      />
+      <Route
         path="/admin"
         element={
           <RequireAdmin>
@@ -83,5 +93,4 @@ export default function App() {
     </Routes>
   );
 }
-
 
